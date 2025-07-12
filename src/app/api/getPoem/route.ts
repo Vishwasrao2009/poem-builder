@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { poems } from "@/data/poems/poems"; // Assuming your file is named poems.ts
-// If your file is named index.ts, the path is "@/data/poems"
+// import { poems } from "@/data/poems/poems"; <-- This line is no longer needed
 
 // Load your API key from environment variables
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -15,9 +14,6 @@ export async function POST(request: Request) {
 
     // The tags variable might be undefined, so we provide an empty array as a fallback
     const tagsString = (tags || []).join(", ");
-    
-    // You now have access to your poems from the file
-    // Example: console.log(poems);
 
     // Create the full prompt for the AI
     const fullPrompt = `Write a poem based on this: "${prompt}". Use the following themes or moods: ${tagsString}. Make it beautiful, concise, and meaningful.`;
@@ -27,12 +23,13 @@ export async function POST(request: Request) {
     const text = response.text();
 
     return NextResponse.json({ poem: text }, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) { // Changed 'any' to 'unknown'
     console.error("Gemini Error:", error);
     
-    // Check for a specific Gemini error message
-    if (error.response && error.response.status === 404) {
-      return NextResponse.json({ error: "Gemini model not found. Please check your model name." }, { status: 500 });
+    // Check if the error is an instance of a standard Error
+    if (error instanceof Error) {
+        // You can now safely access the message property
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ error: "An unexpected error occurred." }, { status: 500 });
