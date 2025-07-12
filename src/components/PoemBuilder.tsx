@@ -1,10 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { poems, Poem } from "@/data/poems";
 
+// DO NOT import the poems directly here. We will get them from the API route.
+// const themes = ["Love", "Nature", "Loss", "Freedom", "Hope", "Chaos", "Resilience"];
+// const moods = ["Joyful", "Melancholy", "Thoughtful", "Excited", "Calm", "Hopeful"];
+
+// The full list of themes and moods can be defined here, as they are not AI-generated.
 const themes = ["Love", "Nature", "Loss", "Freedom", "Hope", "Chaos", "Resilience"];
 const moods = ["Joyful", "Melancholy", "Thoughtful", "Excited", "Calm", "Hopeful"];
+
+// Define the type for the poem data you get back from the API
+interface PoemResponse {
+  poem: string;
+}
 
 const teamMembers = [
   "Prudhvi Raj – Leader",
@@ -18,57 +27,41 @@ const PoemBuilder = () => {
   const [theme, setTheme] = useState("dark");
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
   const [selectedMood, setSelectedMood] = useState<string | null>(null);
-  const [poem, setPoem] = useState<Poem | null>(null);
+  const [poem, setPoem] = useState<string | null>(null); // Poem is now a string
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
-  const generatePoem = () => {
+  // This is the new, correct way to generate the poem
+  const generatePoem = async () => {
     setError("");
+    setPoem(null);
+    setIsLoading(true);
 
-    if (!selectedTheme || !selectedMood) {
-      setError("Please select both a theme and a mood.");
-      setPoem(null);
-      return;
+    // You can use your selected themes and moods as "tags" for the AI
+    const tags = [selectedTheme, selectedMood].filter(Boolean);
+
+    try {
+      const response = await fetch("/api/getPoem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: "Write a poem", tags }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch poem from API.");
+      }
+
+      const data: PoemResponse = await response.json();
+      setPoem(data.poem);
+
+    } catch (err) {
+      console.error(err);
+      setError("Failed to generate poem. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
-
-    // Key for local storage
-    const storageKey = `${selectedTheme}_${selectedMood}_shown_poems`;
-
-    // Retrieve and parse shown poems from local storage
-    const shownPoemsIds = new Set<string>(JSON.parse(localStorage.getItem(storageKey) || "[]"));
-
-    const filteredPoems = poems.filter(
-      (p) => p.theme === selectedTheme && p.mood === selectedMood
-    );
-
-    // Filter out poems that have already been shown
-    const unshownPoems = filteredPoems.filter(
-      (p) => !shownPoemsIds.has(p.text) // Using text as a unique ID for simplicity
-    );
-
-    // If all poems for this combination have been shown, reset the list
-    let finalPoemList = unshownPoems;
-    if (unshownPoems.length === 0) {
-      localStorage.removeItem(storageKey);
-      finalPoemList = filteredPoems;
-    }
-
-    if (finalPoemList.length === 0) {
-      setError("No poems found for this combination. Please try another.");
-      setPoem(null);
-      return;
-    }
-
-    // Pick a random poem from the (now non-repeating) list
-    const randomPoem = finalPoemList[Math.floor(Math.random() * finalPoemList.length)];
-
-    // Update local storage with the new shown poem
-    const newShownPoemsIds = new Set(shownPoemsIds);
-    newShownPoemsIds.add(randomPoem.text);
-    localStorage.setItem(storageKey, JSON.stringify(Array.from(newShownPoemsIds)));
-
-    setPoem(randomPoem);
   };
 
   return (
@@ -127,9 +120,10 @@ const PoemBuilder = () => {
 
       <button
         onClick={generatePoem}
-        className="mt-4 px-6 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700"
+        disabled={isLoading}
+        className="mt-4 px-6 py-2 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700 disabled:opacity-50"
       >
-        Generate Poem
+        {isLoading ? "Generating..." : "Generate Poem"}
       </button>
 
       {error && (
@@ -141,8 +135,7 @@ const PoemBuilder = () => {
       {poem && (
         <div className="mt-8 p-4 border rounded bg-opacity-20 backdrop-blur-lg">
           <h2 className="text-xl font-semibold mb-2">📝 Your Poem</h2>
-          <pre className="whitespace-pre-wrap">{poem.text}</pre>
-          <p className="mt-4 text-sm opacity-75">Theme: {poem.theme} | Mood: {poem.mood}</p>
+          <pre className="whitespace-pre-wrap">{poem}</pre>
         </div>
       )}
 
