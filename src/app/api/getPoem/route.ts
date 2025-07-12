@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { poems, Poem } from "@/data/poems/poems"; // Assuming your file is named poems.ts
+import { poems, Poem } from "@/data/poems"; // Assuming your file is named poems.ts
 import { title } from "process";
 
 export async function POST(request: Request) {
