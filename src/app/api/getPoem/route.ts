@@ -1,34 +1,39 @@
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-// import { poems } from "@/data/poems/poems"; <-- This line is no longer needed
-
-// Load your API key from environment variables
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { poems, Poem } from "@/data/poems/poems"; // Assuming your file is named poems.ts
+import { title } from "process";
 
 export async function POST(request: Request) {
   try {
     const { prompt, tags } = await request.json();
 
-    // Select a Gemini model with broader availability
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-
-    // The tags variable might be undefined, so we provide an empty array as a fallback
-    const tagsString = (tags || []).join(", ");
-
-    // Create the full prompt for the AI
-    const fullPrompt = `Write a poem based on this: "${prompt}". Use the following themes or moods: ${tagsString}. Make it beautiful, concise, and meaningful.`;
-
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    const text = response.text();
-
-    return NextResponse.json({ poem: text }, { status: 200 });
-  } catch (error: unknown) { // Changed 'any' to 'unknown'
-    console.error("Gemini Error:", error);
+    const [selectedTheme, selectedMood] = tags;
     
-    // Check if the error is an instance of a standard Error
+    // Check if the theme and mood are selected
+    if (!selectedTheme || !selectedMood) {
+      return NextResponse.json({ error: "Please select both a theme and a mood." }, { status: 400 });
+    }
+
+    // Filter the poems array to find a match
+    const filteredPoems = poems.filter(
+      (p: { theme: string; mood: string; }) => 
+        p.theme === selectedTheme && p.mood === selectedMood
+    );
+
+    // If no poems match, return an error
+    if (filteredPoems.length === 0) {
+      return NextResponse.json({ error: "No poems found for this combination. Please try another." }, { status: 404 });
+    }
+    
+    // Select a random poem from the filtered list
+    const randomPoem = filteredPoems[Math.floor(Math.random() * filteredPoems.length)];
+
+    // Return the random poem's text
+    return NextResponse.json({ poem: randomPoem.text }, { status: 200 });
+
+  } catch (error: unknown) {
+    console.error("API Error:", error);
+    
     if (error instanceof Error) {
-        // You can now safely access the message property
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
