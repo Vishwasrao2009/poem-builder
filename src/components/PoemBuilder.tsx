@@ -140,11 +140,20 @@ const PoemBuilder = () => {
       )}
 
       <footer className="mt-12 text-sm text-center opacity-75">
-        <p>Team Members:</p>
-        {teamMembers.map((name, index) => (
-          <p key={index}>{name}</p>
-        ))}
-      </footer>
+  <p>Team Members:</p>
+  {teamMembers.map((name, index) => (
+    <p key={index}>{name}</p>
+  ))}
+
+  {/* Logo below names */}
+  <div className="mt-4 flex justify-center">
+    <img
+      src="/dps-miyapur-logo.png"
+      alt="DPS Miyapur Logo"
+      className="h-24 w-auto"
+    />
+  </div>
+</footer>
     </div>
   );
 };
