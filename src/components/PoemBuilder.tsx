@@ -17,10 +17,10 @@ interface PoemResponse {
 
 const teamMembers = [
   "Prudhvi Raj – Leader",
-  "Pritika Ajwani – Co-Leader",
-  "Partha Pratim Bheem – Member",
-  "Vinisha – Member",
-  "Vishwas Rao – Member"
+  "Pritika Ajwani",
+  "Partha",
+  "Vinisha",
+  "Vishwas Rao"
 ];
 
 const PoemBuilder = () => {
